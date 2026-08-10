@@ -1,6 +1,11 @@
 import 'server-only'
 
 import { amazonConfig, isAmazonConfigured } from './config'
+import {
+  isEligibilityBlocked,
+  markEligible,
+  markNotEligible,
+} from './eligibility'
 
 /**
  * Cliente server-only de la Amazon Creators API.
@@ -89,6 +94,10 @@ export async function searchItems(
 ): Promise<AmazonItem[] | null> {
   if (!isAmazonConfigured()) return null
 
+  // Si sabemos que la cuenta no es elegible, no gastamos una llamada: usamos el
+  // fallback directamente hasta que expire el enfriamiento.
+  if (isEligibilityBlocked()) return null
+
   const token = await getAccessToken()
   if (!token) return null
 
@@ -128,11 +137,25 @@ export async function searchItems(
 
     if (!res.ok) {
       const errorBody = await res.text().catch(() => '')
+
+      // 403 AssociateNotEligible: la cuenta aún no cumple los requisitos de
+      // Amazon. Activamos el enfriamiento para no repetir llamadas inútiles.
+      // La recuperación es automática cuando expire.
+      if (
+        res.status === 403 &&
+        /AssociateNotEligible|eligibility/i.test(errorBody)
+      ) {
+        markNotEligible()
+      }
+
       console.log(
         `[v0] Amazon searchItems error: ${res.status} ${res.statusText} :: ${errorBody.slice(0, 300)}`,
       )
       return null
     }
+
+    // Respuesta correcta: la cuenta es elegible. Reanudamos el uso normal.
+    markEligible()
 
     const data = (await res.json()) as {
       searchResult?: { items?: AmazonItem[] }
