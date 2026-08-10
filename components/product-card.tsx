@@ -16,7 +16,13 @@ export function ProductCard({ product }: { product: Product }) {
         />
       </div>
       <div className="flex flex-1 flex-col p-5">
-        <StarRating rating={product.rating} reviews={product.reviews} />
+        {product.rating > 0 ? (
+          <StarRating rating={product.rating} reviews={product.reviews} />
+        ) : (
+          <span className="text-xs font-medium text-muted-foreground/70">
+            Valoración en Amazon
+          </span>
+        )}
         <h3 className="mt-2 font-serif text-base font-semibold leading-snug text-foreground text-balance">
           {product.name}
         </h3>

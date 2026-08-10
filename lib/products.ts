@@ -15,6 +15,11 @@ import {
   categoryKeywords,
   isAmazonConfigured,
 } from '@/lib/amazon/config'
+import {
+  getSeedProductsByCategory,
+  hasSeedProducts,
+  searchSeedProducts,
+} from '@/lib/data/seed-products'
 
 /**
  * Fachada única de acceso a productos.
@@ -49,7 +54,13 @@ export const getProductsByCategory = unstable_cache(
       if (mapped.length > 0) return mapped
     }
 
-    // Fallback: catálogo local.
+    // Fallback 1: catálogo inicial de productos reales (seed).
+    if (hasSeedProducts()) {
+      const seeded = getSeedProductsByCategory(slug)
+      if (seeded.length > 0) return seeded
+    }
+
+    // Fallback 2: catálogo de demostración local.
     return getLocalProductsByCategory(slug)
   },
   ['products-by-category'],
@@ -72,7 +83,13 @@ export const searchProducts = unstable_cache(
       }
     }
 
-    // Fallback: búsqueda local sobre el catálogo estático.
+    // Fallback 1: búsqueda en el catálogo inicial de productos reales (seed).
+    if (hasSeedProducts()) {
+      const seeded = searchSeedProducts(query)
+      if (seeded.length > 0) return seeded
+    }
+
+    // Fallback 2: búsqueda sobre el catálogo de demostración local.
     const normalized = normalize(query)
     return localProducts.filter((p) =>
       [p.name, p.description, p.category].some((field) =>
