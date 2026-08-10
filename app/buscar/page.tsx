@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
 import { searchCategories, searchProducts } from '@/lib/products'
+import { buildAffiliateSearchUrl } from '@/lib/data/seed-products'
 import { PageHero } from '@/components/page-hero'
 import { ProductCard } from '@/components/product-card'
 
@@ -79,13 +81,23 @@ export default async function SearchPage({
                 No hemos encontrado productos para{' '}
                 <span className="font-medium text-foreground">
                   &ldquo;{query}&rdquo;
-                </span>
-                . Prueba con otro término o explora nuestras{' '}
+                </span>{' '}
+                en nuestra selección. Puedes buscarlo directamente en Amazon.es
+                o explorar nuestras{' '}
                 <Link href="/" className="font-medium text-primary underline">
                   categorías
                 </Link>
                 .
               </p>
+              <a
+                href={buildAffiliateSearchUrl(query)}
+                rel="nofollow sponsored noopener"
+                target="_blank"
+                className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Buscar &ldquo;{query}&rdquo; en Amazon
+                <ArrowUpRight className="size-4" aria-hidden="true" />
+              </a>
             </div>
           )
         )}
