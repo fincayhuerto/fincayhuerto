@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { categories, products } from '@/lib/data'
+import { searchCategories, searchProducts } from '@/lib/products'
 import { PageHero } from '@/components/page-hero'
 import { ProductCard } from '@/components/product-card'
 
@@ -10,13 +10,6 @@ export const metadata: Metadata = {
   robots: { index: false },
 }
 
-function normalize(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
 export default async function SearchPage({
   searchParams,
 }: {
@@ -24,23 +17,13 @@ export default async function SearchPage({
 }) {
   const { q = '' } = await searchParams
   const query = q.trim()
-  const term = normalize(query)
 
-  const productResults = term
-    ? products.filter((p) =>
-        [p.name, p.description, p.category].some((field) =>
-          normalize(field).includes(term),
-        ),
-      )
-    : []
-
-  const categoryResults = term
-    ? categories.filter((c) =>
-        [c.name, c.description].some((field) =>
-          normalize(field).includes(term),
-        ),
-      )
-    : []
+  const [productResults, categoryResults] = query
+    ? await Promise.all([
+        searchProducts(query),
+        Promise.resolve(searchCategories(query)),
+      ])
+    : [[], []]
 
   const total = productResults.length + categoryResults.length
 

@@ -1,12 +1,20 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { categories, getCategory, getProductsByCategory } from '@/lib/data'
+import { categories, getCategory } from '@/lib/data'
+import { getProductsByCategory } from '@/lib/products'
 import { PageHero } from '@/components/page-hero'
 import { ProductCard } from '@/components/product-card'
 
+/**
+ * Prerenderiza las categorías conocidas y las revalida periódicamente (ISR),
+ * de modo que los productos de Amazon se refrescan sin reconstruir la web.
+ */
 export function generateStaticParams() {
   return categories.map((category) => ({ slug: category.slug }))
 }
+
+/** Revalida la página cada 6 horas para refrescar los productos de Amazon. */
+export const revalidate = 21600
 
 export async function generateMetadata({
   params,
@@ -32,7 +40,7 @@ export default async function CategoryPage({
   const category = getCategory(slug)
   if (!category) notFound()
 
-  const categoryProducts = getProductsByCategory(slug)
+  const categoryProducts = await getProductsByCategory(slug)
 
   return (
     <>
