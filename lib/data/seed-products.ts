@@ -1,22 +1,21 @@
 /**
- * Catálogo inicial de productos de Amazon.es para FincaYHuerto.
+ * Catálogo PROVISIONAL de FincaYHuerto.
  *
- * Este catálogo es el FALLBACK mientras la Amazon Creators API devuelve
- * `403 AssociateNotEligible`. Cuando la API pase a estar disponible, se
- * convierte en fuente secundaria automáticamente (ver `lib/products.ts`).
+ * Sirve únicamente para que la web tenga contenido y enlaces mientras la Amazon
+ * Creators API devuelve `403 AssociateNotEligible`. Cuando la API pase a estar
+ * disponible, se convierte en fuente secundaria automáticamente (la fuente
+ * principal es la API; ver `lib/products.ts`).
  *
- * REGLAS DE INTEGRIDAD DE DATOS
- * -----------------------------
- * - Los ASIN provienen de la lista curada por el propietario del sitio; no se
- *   inventan aquí.
- * - NUNCA se inventan precios, valoraciones, imágenes ni marcas. Los datos que
- *   no se pueden verificar sin la API se dejan sin definir y la tarjeta los
- *   degrada con elegancia ("Ver precio en Amazon" / "Valoración en Amazon" /
- *   imagen de categoría). La Creators API los rellenará cuando esté activa.
- * - Las entradas sin ASIN verificable usan una BÚSQUEDA de afiliado en
- *   Amazon.es (`searchTerm`), nunca un ASIN inventado.
+ * REGLAS DE INTEGRIDAD DE DATOS (mientras la API dé 403)
+ * ------------------------------------------------------
+ * - NO se inventan precios, valoraciones, número de opiniones, marcas, ASIN ni
+ *   imágenes de productos concretos.
+ * - Cada entrada es un TIPO de producto basado en una búsqueda real de
+ *   Amazon.es. El enlace es una búsqueda de afiliado, no un producto concreto.
  * - Los enlaces de afiliado se generan a partir del `AMAZON_PARTNER_TAG` de las
  *   variables de entorno, nunca escrito a mano ni expuesto al navegador.
+ * - La imagen es una ilustración GENÉRICA de la categoría (no de un producto
+ *   concreto). La API rellenará imágenes reales cuando esté activa.
  */
 
 import type { Product } from '@/lib/data'
@@ -31,209 +30,153 @@ export type SeedCategory =
   | 'maquinaria'
 
 export type SeedProduct = {
-  /** Identificador interno estable (ASIN, o slug de búsqueda). */
+  /** Identificador interno estable (único por categoría + tipo). */
   id: string
-  /** ASIN real de Amazon.es. Ausente en entradas basadas en búsqueda. */
-  asin?: string
-  /** Término de búsqueda de afiliado (para entradas sin ASIN verificable). */
-  searchTerm?: string
-  /** Nombre del producto o de la búsqueda. */
+  /** Nombre descriptivo del tipo de producto. */
   title: string
-  /** Marca verificada (opcional; nunca inventada). */
-  brand?: string
   /** Categoría del sitio. */
   category: SeedCategory
-  /** Subcategoría o descripción corta opcional. */
-  subcategory?: string
-  /** URL de imagen real (opcional hasta tener la API). */
-  imageUrl?: string
-  /** Precio numérico verificado (opcional). */
-  price?: number
-  /** Moneda ISO, p. ej. "EUR" (opcional). */
-  currency?: string
-  /** Valoración media verificada 0-5 (opcional). */
-  rating?: number
-  /** Número de valoraciones verificado (opcional). */
-  reviewCount?: number
-  /** Disponibilidad verificada (opcional). */
-  availability?: string
-  /** Origen del dato. */
-  source: 'seed-asin' | 'seed-search'
-  /** Producto destacado: se muestra primero dentro de su categoría. */
-  featured?: boolean
-  /** Producto popular / más vendido: se muestra tras los destacados. */
-  popular?: boolean
-  /** Ranking de popularidad si está disponible (menor = más popular). */
-  popularityRank?: number
+  /** Subcategoría / agrupación temática. */
+  subcategory: string
+  /** Término de búsqueda de afiliado en Amazon.es. */
+  searchTerm: string
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Datos de origen (curados por el propietario del sitio)                     */
+/*  Datos de origen: tipos de producto por categoría (búsquedas reales)         */
+/*  Formato: [nombre del tipo de producto, subcategoría]                        */
 /* -------------------------------------------------------------------------- */
 
-/** ASIN reales de Amazon.es agrupados por categoría. */
-const ASINS_BY_CATEGORY: Record<SeedCategory, string[]> = {
-  huerto: [
-    'B0C8543T5J',
-    'B09J1C9S5F',
-    'B08RNR6CKL',
-    'B0DKJHGHBG',
-    'B0CN31NZZJ',
-    'B0BGQHPSGZ',
-    'B0D3QNZZYB',
-    'B07NKDXBJV',
-    'B08NYMD29T',
-    'B0CQRL6HD7',
-    'B00IRFPV0Y',
-    'B0CRZ2CZJK',
-    'B0BLYVXWF3',
-    'B0DX12LPSV',
-    'B0DL8T2CW5',
-    'B0D59K7G31',
-    'B0DPQG5Y73',
-    'B0FDBMPCY6',
-    'B0B6WDXTWK',
-    'B0F88FVS4R',
-  ],
-  jardin: [
-    'B0BS9NHJZN',
-    'B0CY4S8R6V',
-    'B0DPFD457G',
-    'B0DNRC11Q8',
-    'B0DRSPLYDT',
-    'B0F4DHRCVF',
-    'B0F38NW8ZL',
-    'B0CLVJ3P6W',
-    'B0DDX8W4W1',
-    'B0CW1QPT3J',
-    'B082RBZMRS',
-    'B08SVTH466',
-    'B07NJNMFVZ',
-    'B0BR5Z3HMK',
-    'B093H1M865',
-    'B0D4LVPGBB',
-    'B00VK1YMJS',
-    'B0166OI3K2',
-    'B0166M18WE',
-    'B0173F8WJK',
-  ],
-  herramientas: [
-    'B00F2NHCI8',
-    'B09GYS9BTG',
-    'B00ZFSMNX4',
-    'B092QMSR4Z',
-    'B0DWT64PDN',
-    'B0D8TKHSW2',
-    'B09KPLPL61',
-    'B0D5H5SKZF',
-    'B0CYLW9Q6C',
-    'B0CPS5MP95',
-    'B0DRP3J5KY',
-    'B076BDCC9R',
-    'B0DC5HQWS4',
-    'B0DRWLTSBX',
-    'B07MJ5LBNG',
-    'B0CXJ5KSX3',
-    'B0F7ZXM5FL',
-    'B0C2MYGR2G',
-    'B08N4R626B',
-    'B0001E3W8C',
-  ],
-  riego: [
-    'B09JWRSCGJ',
-    'B0B719XTZZ',
-    'B0C9DJS549',
-    'B0CPPCZRSN',
-    'B0DRFYLPX4',
-    'B08HVJSH8M',
-    'B07PDS3HB4',
-    'B0DV4JPXVN',
-    'B0BWKBFBSS',
-    'B0D2DGGP63',
-    'B0DT4DZ7RC',
-    'B0DV4JX6LX',
-    'B0GCJCT6TD',
-    'B0F3Z4XKFH',
-  ],
-  semillas: [
-    'B093WJK67T',
-    'B0DKTL5FQG',
-    'B0DGTBCFCM',
-    'B0BVZDXVMG',
-    'B0CYM3XJDN',
-    'B0D8L537HM',
-    'B0DQVGFXM4',
-    'B0BPJV4YYR',
-    'B09LQYRNK4',
-    'B01HMLGB0M',
-    'B0DPGNL19X',
-  ],
-  maquinaria: [
-    'B093PG1N2C',
-    'B0CXCGTYJ7',
-    'B0CLCK1P2K',
-    'B0CKTFDDFW',
-    'B0BPCLNSFL',
-    'B0CR3TJMG4',
-    'B0BVZ7Y6J5',
-    'B073Q66272',
-    'B0DP4PH2J3',
-    'B0DK5FTJG2',
-  ],
-}
+const CATALOG: Record<SeedCategory, Array<[title: string, subcategory: string]>> =
+  {
+    huerto: [
+      ['Semillas de tomate', 'Semillas'],
+      ['Semillas de pimiento', 'Semillas'],
+      ['Semillas de lechuga', 'Semillas'],
+      ['Semilleros', 'Germinación'],
+      ['Bandejas de cultivo', 'Germinación'],
+      ['Sustrato universal', 'Sustratos y abonos'],
+      ['Tierra para huerto', 'Sustratos y abonos'],
+      ['Abono orgánico', 'Sustratos y abonos'],
+      ['Compost', 'Sustratos y abonos'],
+      ['Guantes de jardinería', 'Protección'],
+      ['Plantadores', 'Plantación'],
+      ['Tutores para plantas', 'Plantación'],
+      ['Malla de sombreo', 'Protección de cultivos'],
+      ['Malla antiheladas', 'Protección de cultivos'],
+      ['Pulverizador', 'Tratamientos'],
+      ['Tijeras de cosecha', 'Herramientas de mano'],
+      ['Azada', 'Herramientas de mano'],
+      ['Horca', 'Herramientas de mano'],
+      ['Rastrillo', 'Herramientas de mano'],
+      ['Carretilla', 'Transporte'],
+    ],
+    jardin: [
+      ['Cortacésped', 'Cuidado del césped'],
+      ['Tijeras de podar', 'Poda'],
+      ['Tijeras cortasetos', 'Poda'],
+      ['Sierra de poda', 'Poda'],
+      ['Manguera', 'Riego'],
+      ['Pistola de riego', 'Riego'],
+      ['Aspersor', 'Riego'],
+      ['Programador de riego', 'Riego'],
+      ['Regadera', 'Riego'],
+      ['Guantes de jardinería', 'Protección'],
+      ['Escoba de jardín', 'Limpieza'],
+      ['Rastrillo', 'Herramientas de mano'],
+      ['Pala', 'Herramientas de mano'],
+      ['Soplador de hojas', 'Limpieza'],
+      ['Cortasetos', 'Poda'],
+      ['Abono para césped', 'Cuidado del césped'],
+      ['Semillas de césped', 'Cuidado del césped'],
+      ['Herbicida', 'Tratamientos'],
+      ['Macetas', 'Macetas y jardineras'],
+      ['Jardinera', 'Macetas y jardineras'],
+    ],
+    herramientas: [
+      ['Azada', 'Herramientas de huerto'],
+      ['Pala', 'Herramientas de huerto'],
+      ['Pico', 'Herramientas de huerto'],
+      ['Rastrillo', 'Herramientas de huerto'],
+      ['Horca', 'Herramientas de huerto'],
+      ['Tijeras de podar', 'Poda'],
+      ['Sierra de poda', 'Poda'],
+      ['Serrucho', 'Corte'],
+      ['Taladro', 'Herramienta eléctrica'],
+      ['Atornillador', 'Herramienta eléctrica'],
+      ['Destornillador', 'Herramientas de mano'],
+      ['Alicates', 'Herramientas de mano'],
+      ['Llave inglesa', 'Herramientas de mano'],
+      ['Juego de llaves', 'Herramientas de mano'],
+      ['Martillo', 'Herramientas de mano'],
+      ['Cutter', 'Corte'],
+      ['Carretilla', 'Transporte'],
+      ['Guantes', 'Protección'],
+      ['Banco de trabajo', 'Taller'],
+      ['Caja de herramientas', 'Almacenaje'],
+    ],
+    riego: [
+      ['Manguera de jardín', 'Mangueras'],
+      ['Carrete portamanguera', 'Mangueras'],
+      ['Pistola de riego', 'Accesorios de manguera'],
+      ['Aspersor', 'Aspersión'],
+      ['Programador de riego', 'Programadores'],
+      ['Programador digital', 'Programadores'],
+      ['Riego por goteo', 'Riego por goteo'],
+      ['Kit de riego por goteo', 'Riego por goteo'],
+      ['Tubo de riego', 'Riego por goteo'],
+      ['Gotero', 'Riego por goteo'],
+      ['Conectores de riego', 'Conexiones'],
+      ['Electroválvula', 'Conexiones'],
+      ['Bomba de agua', 'Bombas'],
+      ['Regadera', 'Riego manual'],
+      ['Depósito de agua', 'Almacenamiento de agua'],
+    ],
+    semillas: [
+      ['Semillas de tomate', 'Semillas de hortalizas'],
+      ['Semillas de pimiento', 'Semillas de hortalizas'],
+      ['Semillas de lechuga', 'Semillas de hortalizas'],
+      ['Semillas de cebolla', 'Semillas de hortalizas'],
+      ['Semillas de zanahoria', 'Semillas de hortalizas'],
+      ['Semillas de calabacín', 'Semillas de hortalizas'],
+      ['Semillas de pepino', 'Semillas de hortalizas'],
+      ['Semillas de berenjena', 'Semillas de hortalizas'],
+      ['Semillas de espinaca', 'Semillas de hortalizas'],
+      ['Semillas de acelga', 'Semillas de hortalizas'],
+      ['Semillas de rábano', 'Semillas de hortalizas'],
+      ['Semillas de judía', 'Semillas de hortalizas'],
+      ['Semillas de guisante', 'Semillas de hortalizas'],
+      ['Semillas de calabaza', 'Semillas de hortalizas'],
+      ['Semillas de brócoli', 'Semillas de hortalizas'],
+    ],
+    maquinaria: [
+      ['Cortacésped', 'Cuidado del césped'],
+      ['Desbrozadora', 'Corte y desbroce'],
+      ['Cortasetos', 'Poda'],
+      ['Motosierra', 'Corte de leña'],
+      ['Soplador', 'Limpieza'],
+      ['Motosierra de poda', 'Poda'],
+      ['Mini motosierra', 'Poda'],
+      ['Motocultor', 'Labranza'],
+      ['Biotrituradora', 'Trituración'],
+      ['Aspirador de hojas', 'Limpieza'],
+    ],
+  }
 
 /**
- * Entradas de BÚSQUEDA de afiliado (sin ASIN verificable) para completar la
- * distribución objetivo sin inventar ASIN. Cada una enlaza a la búsqueda real
- * de Amazon.es con el Partner Tag.
+ * Sufijo de búsqueda por categoría para mejorar la relevancia en Amazon.es.
+ * No se añade si el título ya contiene la raíz del sufijo.
  */
-const SEARCH_ENTRIES: Array<{
-  category: SeedCategory
-  title: string
-  searchTerm: string
-}> = [
-  {
-    category: 'riego',
-    title: 'Programador de riego automático',
-    searchTerm: 'programador de riego automatico jardin',
-  },
-  {
-    category: 'semillas',
-    title: 'Semillas de tomate',
-    searchTerm: 'semillas de tomate huerto',
-  },
-  {
-    category: 'semillas',
-    title: 'Semillas de lechuga',
-    searchTerm: 'semillas de lechuga huerto',
-  },
-  {
-    category: 'semillas',
-    title: 'Semillas de pimiento',
-    searchTerm: 'semillas de pimiento huerto',
-  },
-  {
-    category: 'semillas',
-    title: 'Semillas de albahaca y aromáticas',
-    searchTerm: 'semillas aromaticas albahaca huerto',
-  },
-]
-
-/* -------------------------------------------------------------------------- */
-/*  Etiquetas e imágenes de categoría (placeholder honesto, no del producto)   */
-/* -------------------------------------------------------------------------- */
-
-/** Etiqueta genérica y honesta por categoría (no es una marca ni un modelo). */
-const CATEGORY_LABEL: Record<SeedCategory, string> = {
-  huerto: 'Artículo de huerto',
-  jardin: 'Artículo de jardín',
-  herramientas: 'Herramienta de jardinería',
-  riego: 'Producto de riego',
-  semillas: 'Semillas para el huerto',
-  maquinaria: 'Maquinaria de jardín',
+const SEARCH_SUFFIX: Record<SeedCategory, string> = {
+  huerto: 'huerto',
+  jardin: 'jardín',
+  herramientas: 'herramienta',
+  riego: 'riego',
+  semillas: 'huerto',
+  maquinaria: 'jardín',
 }
 
-/** Imagen ilustrativa de la categoría usada como placeholder (no del producto). */
+/** Imagen ILUSTRATIVA de la categoría (no de un producto concreto). */
 const CATEGORY_IMAGE: Record<SeedCategory, string> = {
   huerto: '/images/cat-huerto.png',
   jardin: '/images/cat-jardin.png',
@@ -244,47 +187,46 @@ const CATEGORY_IMAGE: Record<SeedCategory, string> = {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Construcción del catálogo (con deduplicación de ASIN)                      */
+/*  Utilidades                                                                  */
+/* -------------------------------------------------------------------------- */
+
+function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function slugify(value: string): string {
+  return normalize(value)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+/** Construye el término de búsqueda añadiendo el sufijo de categoría si aporta. */
+function buildSearchTerm(title: string, category: SeedCategory): string {
+  const suffix = SEARCH_SUFFIX[category]
+  const alreadyIncluded = normalize(title).includes(normalize(suffix))
+  return alreadyIncluded ? title : `${title} ${suffix}`
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Construcción del catálogo                                                   */
 /* -------------------------------------------------------------------------- */
 
 function buildSeedProducts(): SeedProduct[] {
   const out: SeedProduct[] = []
-  const seenAsins = new Set<string>()
-
-  for (const category of Object.keys(ASINS_BY_CATEGORY) as SeedCategory[]) {
-    ASINS_BY_CATEGORY[category].forEach((asin, index) => {
-      const normalized = asin.trim().toUpperCase()
-      // Regla 8/9: elimina duplicados; conserva la primera categoría asignada.
-      if (seenAsins.has(normalized)) return
-      seenAsins.add(normalized)
-
+  for (const category of Object.keys(CATALOG) as SeedCategory[]) {
+    for (const [title, subcategory] of CATALOG[category]) {
       out.push({
-        id: normalized,
-        asin: normalized,
-        title: `${CATEGORY_LABEL[category]} · Ref. ${normalized}`,
+        id: `${category}-${slugify(title)}`,
+        title,
         category,
-        source: 'seed-asin',
-        // El primer producto de cada categoría se marca como destacado
-        // únicamente para dar un orden estable, sin afirmar nada del producto.
-        featured: index === 0,
-        popular: index < 4,
-        popularityRank: index,
+        subcategory,
+        searchTerm: buildSearchTerm(title, category),
       })
-    })
+    }
   }
-
-  // Entradas basadas en búsqueda de afiliado (sin ASIN).
-  SEARCH_ENTRIES.forEach((entry, index) => {
-    out.push({
-      id: `search-${entry.category}-${index}`,
-      searchTerm: entry.searchTerm,
-      title: entry.title,
-      category: entry.category,
-      source: 'seed-search',
-      popularityRank: 100 + index,
-    })
-  })
-
   return out
 }
 
@@ -298,26 +240,9 @@ function marketplaceHost(): string {
   return process.env.AMAZON_MARKETPLACE ?? 'www.amazon.es'
 }
 
-/** URL limpia del producto en Amazon (sin tag). */
-export function buildAmazonUrl(asin: string): string {
-  return `https://${marketplaceHost()}/dp/${asin}`
-}
-
-/**
- * URL de afiliado de un producto: `/dp/{ASIN}` + Partner Tag de la variable de
- * entorno. Si no hay tag configurado, devuelve la URL sin tag.
- */
-export function buildAffiliateUrl(asin: string): string {
-  const url = new URL(buildAmazonUrl(asin))
-  const tag = process.env.AMAZON_PARTNER_TAG
-  if (tag) url.searchParams.set('tag', tag)
-  return url.toString()
-}
-
 /**
  * URL de afiliado de una BÚSQUEDA en Amazon.es + Partner Tag de la variable de
- * entorno. Se usa para entradas sin ASIN y para búsquedas del usuario sin
- * coincidencias en el catálogo.
+ * entorno. Si no hay tag configurado, devuelve la URL sin tag.
  */
 export function buildAffiliateSearchUrl(term: string): string {
   const url = new URL(`https://${marketplaceHost()}/s`)
@@ -331,105 +256,76 @@ export function buildAffiliateSearchUrl(term: string): string {
 /*  Conversión al tipo `Product` que usa la interfaz                           */
 /* -------------------------------------------------------------------------- */
 
-function formatPrice(amount: number, currency?: string): string {
-  const symbol = currency === 'USD' ? '$' : '€'
-  const formatted = amount.toLocaleString('es-ES', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  return `${formatted} ${symbol}`
-}
-
 /**
- * Convierte un `SeedProduct` al `Product` que consumen las tarjetas.
- * Los datos no verificados se degradan con elegancia:
- *   - sin precio  → "Ver precio en Amazon"
- *   - sin rating  → 0 (la tarjeta oculta la valoración)
- *   - sin imagen  → imagen ilustrativa de la categoría
+ * Convierte un `SeedProduct` provisional al `Product` que consumen las tarjetas.
+ * NO incluye precio, valoración ni opiniones: son datos que no se pueden
+ * verificar sin la API y no se inventan.
+ *   - price  → '' (la tarjeta oculta el precio)
+ *   - rating → 0  (la tarjeta oculta la valoración)
+ *   - image  → ilustración GENÉRICA de la categoría (no de un producto)
  */
 export function seedToProduct(seed: SeedProduct): Product {
-  const affiliateUrl = seed.asin
-    ? buildAffiliateUrl(seed.asin)
-    : buildAffiliateSearchUrl(seed.searchTerm ?? seed.title)
-
-  const description =
-    seed.source === 'seed-search'
-      ? 'Explora las mejores opciones disponibles ahora en Amazon.es.'
-      : 'Producto real de Amazon.es. Consulta nombre, precio y valoraciones actualizados en Amazon.'
-
   return {
-    slug: (seed.asin ?? seed.id).toLowerCase(),
+    slug: seed.id,
     name: seed.title,
-    description: seed.subcategory ?? description,
+    description: seed.subcategory,
     category: seed.category,
-    rating: seed.rating ?? 0,
-    reviews: seed.reviewCount ?? 0,
-    price:
-      typeof seed.price === 'number'
-        ? formatPrice(seed.price, seed.currency)
-        : 'Ver precio en Amazon',
-    image: seed.imageUrl ?? CATEGORY_IMAGE[seed.category],
-    affiliateUrl,
+    rating: 0,
+    reviews: 0,
+    price: '',
+    image: CATEGORY_IMAGE[seed.category],
+    affiliateUrl: buildAffiliateSearchUrl(seed.searchTerm),
   }
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Orden y consultas                                                          */
+/*  Consultas                                                                   */
 /* -------------------------------------------------------------------------- */
 
-/** Ordena: destacados primero, luego populares, luego el resto. */
-function sortByPriority(a: SeedProduct, b: SeedProduct): number {
-  const rank = (p: SeedProduct) => (p.featured ? 0 : p.popular ? 1 : 2)
-  const diff = rank(a) - rank(b)
-  if (diff !== 0) return diff
-  const ra = a.popularityRank ?? Number.MAX_SAFE_INTEGER
-  const rb = b.popularityRank ?? Number.MAX_SAFE_INTEGER
-  return ra - rb
-}
-
-/** Productos de una categoría, ya ordenados y convertidos a `Product`. */
+/** Productos de una categoría, convertidos a `Product`. */
 export function getSeedProductsByCategory(category: string): Product[] {
   return seedProducts
     .filter((p) => p.category === category)
-    .sort(sortByPriority)
     .map(seedToProduct)
 }
 
-function normalize(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
-/** Búsqueda por término libre sobre el catálogo inicial. */
+/** Búsqueda por término libre sobre el catálogo provisional. */
 export function searchSeedProducts(term: string): Product[] {
   const q = normalize(term.trim())
   if (!q) return []
   return seedProducts
     .filter((p) =>
-      [p.title, p.subcategory ?? '', p.searchTerm ?? '', p.category].some(
-        (field) => normalize(field).includes(q),
+      [p.title, p.subcategory, p.searchTerm, p.category].some((field) =>
+        normalize(field).includes(q),
       ),
     )
-    .sort(sortByPriority)
     .map(seedToProduct)
 }
 
-/** Productos destacados de todo el catálogo (para la home). */
+/** Productos para la home (una muestra representativa de cada categoría). */
 export function getFeaturedSeedProducts(limit = 8): Product[] {
-  return [...seedProducts]
-    .sort(sortByPriority)
-    .slice(0, limit)
-    .map(seedToProduct)
+  const categoriesOrder = Object.keys(CATALOG) as SeedCategory[]
+  const picks: SeedProduct[] = []
+  // Toma el primer producto de cada categoría de forma rotatoria.
+  let index = 0
+  while (picks.length < limit && picks.length < seedProducts.length) {
+    for (const category of categoriesOrder) {
+      const list = seedProducts.filter((p) => p.category === category)
+      if (list[index]) picks.push(list[index])
+      if (picks.length >= limit) break
+    }
+    index += 1
+    if (index > 30) break
+  }
+  return picks.map(seedToProduct)
 }
 
-/** ¿Hay algún producto en el catálogo inicial? */
+/** ¿Hay algún producto en el catálogo provisional? */
 export function hasSeedProducts(): boolean {
   return seedProducts.length > 0
 }
 
-/** Total de entradas del catálogo inicial (para verificación). */
+/** Total de entradas del catálogo provisional (para verificación). */
 export function seedProductCount(): number {
   return seedProducts.length
 }
