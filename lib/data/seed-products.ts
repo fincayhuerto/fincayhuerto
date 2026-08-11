@@ -49,7 +49,10 @@ asin?: string
 /*  Formato: [nombre del tipo de producto, subcategoría]                        */
 /* -------------------------------------------------------------------------- */
 
-const CATALOG: Record<SeedCategory, Array<[title: string, subcategory: string]>> =
+cconst CATALOG: Record<
+  SeedCategory,
+  Array<[title: string, subcategory: string, asin?: string]>
+> =
   {
     huerto: [
       ['Semillas de tomate', 'Semillas'],
@@ -72,10 +75,6 @@ const CATALOG: Record<SeedCategory, Array<[title: string, subcategory: string]>>
       ['Horca', 'Herramientas de mano'],
       ['Rastrillo', 'Herramientas de mano'],
       ['Carretilla', 'Transporte'],
-    ],
-    jardin: [
-      ['Cortacésped', 'Cuidado del césped'],
-      ['Tijeras de podar', 'Poda'],
       ['Tijeras cortasetos', 'Poda'],
       ['Sierra de poda', 'Poda'],
       ['Manguera', 'Riego'],
@@ -95,6 +94,9 @@ const CATALOG: Record<SeedCategory, Array<[title: string, subcategory: string]>>
       ['Macetas', 'Macetas y jardineras'],
       ['Jardinera', 'Macetas y jardineras'],
     ],
+      jardin: [
+  ['Tijeras de podar Bellota 3628 INOX-CE MB', 'Poda', 'B00F2NHFDA'],
+],
     herramientas: [
       ['Azada', 'Herramientas de huerto'],
       ['Pala', 'Herramientas de huerto'],
@@ -219,13 +221,14 @@ function buildSearchTerm(title: string, category: SeedCategory): string {
 function buildSeedProducts(): SeedProduct[] {
   const out: SeedProduct[] = []
   for (const category of Object.keys(CATALOG) as SeedCategory[]) {
-    for (const [title, subcategory] of CATALOG[category]) {
+    for (const [title, subcategory, asin] of CATALOG[category]) {
       out.push({
         id: `${category}-${slugify(title)}`,
         title,
         category,
         subcategory,
         searchTerm: buildSearchTerm(title, category),
+        asin,
       })
     }
   }
