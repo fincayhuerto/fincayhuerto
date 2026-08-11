@@ -39,7 +39,9 @@ export type SeedProduct = {
   /** Subcategoría / agrupación temática. */
   subcategory: string
   /** Término de búsqueda de afiliado en Amazon.es. */
-  searchTerm: string
+searchTerm: string
+/** ASIN de Amazon para enlazar directamente al producto. */
+asin?: string
 }
 
 /* -------------------------------------------------------------------------- */
@@ -274,7 +276,14 @@ export function seedToProduct(seed: SeedProduct): Product {
     reviews: 0,
     price: '',
     image: CATEGORY_IMAGE[seed.category],
-    affiliateUrl: buildAffiliateSearchUrl(seed.searchTerm),
+    affiliateUrl: seed.asin
+  ? (() => {
+      const url = new URL(`https://${marketplaceHost()}/dp/${encodeURIComponent(seed.asin)}`)
+      const tag = process.env.AMAZON_PARTNER_TAG
+      if (tag) url.searchParams.set('tag', tag)
+      return url.toString()
+    })()
+  : buildAffiliateSearchUrl(seed.searchTerm),
   }
 }
 
