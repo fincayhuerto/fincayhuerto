@@ -97,6 +97,21 @@ export const categories: Category[] = [
   },
 ]
 
+/**
+ * Construye un enlace de afiliado a una BÚSQUEDA en Amazon España.
+ * El Partner Tag procede EXCLUSIVAMENTE de la variable de entorno
+ * `AMAZON_PARTNER_TAG` (nunca escrito a mano). Si no está configurado, se
+ * devuelve la URL sin tag.
+ */
+function amazonSearch(term: string): string {
+  const host = process.env.AMAZON_MARKETPLACE ?? 'www.amazon.es'
+  const url = new URL(`https://${host}/s`)
+  url.searchParams.set('k', term)
+  const tag = process.env.AMAZON_PARTNER_TAG
+  if (tag) url.searchParams.set('tag', tag)
+  return url.toString()
+}
+
 export const products: Product[] = [
   {
     slug: 'tijeras-de-podar-profesionales',
@@ -107,7 +122,7 @@ export const products: Product[] = [
     reviews: 1284,
     price: '24,99 €',
     image: '/images/product-tijeras.png',
-    affiliateUrl: '#afiliado-tijeras-de-podar',
+    affiliateUrl: amazonSearch('tijeras de podar profesionales'),
   },
   {
     slug: 'kit-riego-por-goteo',
@@ -118,7 +133,7 @@ export const products: Product[] = [
     reviews: 942,
     price: '39,90 €',
     image: '/images/product-riego.png',
-    affiliateUrl: '#afiliado-kit-riego-goteo',
+    affiliateUrl: amazonSearch('kit riego por goteo automatico'),
   },
   {
     slug: 'surtido-semillas-huerto',
@@ -129,7 +144,7 @@ export const products: Product[] = [
     reviews: 613,
     price: '14,95 €',
     image: '/images/product-semillas.png',
-    affiliateUrl: '#afiliado-surtido-semillas',
+    affiliateUrl: amazonSearch('surtido semillas huerto'),
   },
   {
     slug: 'motocultor-gasolina',
@@ -140,7 +155,7 @@ export const products: Product[] = [
     reviews: 327,
     price: '289,00 €',
     image: '/images/product-motocultor.png',
-    affiliateUrl: '#afiliado-motocultor',
+    affiliateUrl: amazonSearch('motocultor gasolina'),
   },
   {
     slug: 'manguera-extensible',
@@ -151,7 +166,7 @@ export const products: Product[] = [
     reviews: 2051,
     price: '29,99 €',
     image: '/images/product-manguera.png',
-    affiliateUrl: '#afiliado-manguera-extensible',
+    affiliateUrl: amazonSearch('manguera extensible jardin'),
   },
   {
     slug: 'hidrolimpiadora-alta-presion',
@@ -162,7 +177,7 @@ export const products: Product[] = [
     reviews: 1567,
     price: '119,00 €',
     image: '/images/product-hidrolimpiadora.png',
-    affiliateUrl: '#afiliado-hidrolimpiadora',
+    affiliateUrl: amazonSearch('hidrolimpiadora alta presion'),
   },
   {
     slug: 'set-herramientas-jardin',
@@ -173,7 +188,7 @@ export const products: Product[] = [
     reviews: 788,
     price: '32,50 €',
     image: '/images/product-herramientas.png',
-    affiliateUrl: '#afiliado-set-herramientas',
+    affiliateUrl: amazonSearch('set herramientas jardin'),
   },
   {
     slug: 'tijeras-podar-huerto',
@@ -184,7 +199,7 @@ export const products: Product[] = [
     reviews: 456,
     price: '18,99 €',
     image: '/images/product-tijeras.png',
-    affiliateUrl: '#afiliado-tijeras-bypass',
+    affiliateUrl: amazonSearch('tijeras de podar bypass'),
   },
 ]
 
