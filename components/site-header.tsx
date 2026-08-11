@@ -5,19 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Leaf, Menu, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { label: 'Inicio', href: '/' },
-  { label: 'Huerto', href: '/categoria/huerto' },
-  { label: 'Jardín', href: '/categoria/jardin' },
-  { label: 'Herramientas', href: '/categoria/herramientas' },
-  { label: 'Riego', href: '/categoria/riego' },
-  { label: 'Semillas', href: '/categoria/semillas' },
-  { label: 'Maquinaria', href: '/categoria/maquinaria' },
-  { label: 'Ofertas', href: '/ofertas' },
-  { label: 'Comparativas', href: '/comparativas' },
-  { label: 'Blog', href: '/blog' },
-]
+import { TopBar } from '@/components/nav/top-bar'
+import { DesktopNav } from '@/components/nav/desktop-nav'
+import { MobileNav } from '@/components/nav/mobile-nav'
 
 export function SiteHeader() {
   const router = useRouter()
@@ -34,8 +24,10 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <TopBar />
+
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Leaf className="size-5" aria-hidden="true" />
           </span>
@@ -81,31 +73,15 @@ export function SiteHeader() {
         </button>
       </div>
 
-      {/* Navegación de escritorio */}
-      <nav
-        aria-label="Principal"
-        className="hidden border-t border-border/60 bg-background lg:block"
-      >
-        <ul className="mx-auto flex max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8">
-          {navItems.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="inline-flex h-11 items-center rounded-md px-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-secondary hover:text-primary"
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* Navegación de escritorio con mega-menú */}
+      <DesktopNav />
 
       {/* Menú móvil */}
       <div
         id="mobile-nav"
         className={cn(
-          'lg:hidden overflow-hidden border-t border-border bg-background transition-[max-height] duration-300',
-          open ? 'max-h-[32rem]' : 'max-h-0',
+          'overflow-y-auto border-t border-border bg-background transition-[max-height] duration-300 lg:hidden',
+          open ? 'max-h-[80vh]' : 'max-h-0',
         )}
       >
         <div className="space-y-4 px-4 py-4 sm:px-6">
@@ -126,19 +102,7 @@ export function SiteHeader() {
               className="h-11 w-full rounded-full border border-border bg-card pl-9 pr-4 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
             />
           </form>
-          <ul className="grid gap-1">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-md px-3 py-2.5 text-base font-medium text-foreground/90 transition-colors hover:bg-secondary hover:text-primary"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <MobileNav onNavigate={() => setOpen(false)} />
         </div>
       </div>
     </header>

@@ -1,24 +1,22 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, BarChart3, BookOpen, Clock } from 'lucide-react'
-import {
-  categories,
-  getCategory,
-  getComparisonsByCategory,
-  getArticlesByCategory,
-} from '@/lib/data'
-import { getProductsByCategory } from '@/lib/products'
+import { getComparisonsByCategory, getArticlesByCategory } from '@/lib/data'
+import { getProductsByCategory, searchProducts } from '@/lib/products'
+import { getAllTaxPaths, resolvePath } from '@/lib/taxonomy'
 import { PageHero } from '@/components/page-hero'
 import { ProductCard } from '@/components/product-card'
 import { CategoryBrowser } from '@/components/category/category-browser'
 
 /**
- * Prerenderiza las categorías conocidas y las revalida periódicamente (ISR),
- * de modo que los productos de Amazon se refrescan sin reconstruir la web.
+ * Prerenderiza todas las rutas de la taxonomía (categoría, grupo y
+ * subcategoría) y las revalida periódicamente (ISR), de modo que los productos
+ * de Amazon se refrescan sin reconstruir la web.
  */
 export function generateStaticParams() {
-  return categories.map((category) => ({ slug: category.slug }))
+  return getAllTaxPaths()
 }
 
 /** Revalida la página cada 6 horas para refrescar los productos de Amazon. */
@@ -27,63 +25,98 @@ export const revalidate = 21600
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ path: string[] }>
 }): Promise<Metadata> {
-  const { slug } = await params
-  const category = getCategory(slug)
-  if (!category) return { title: 'Categoría no encontrada' }
+  const { path } = await params
+  const resolved = resolvePath(path)
+  if (!resolved) return { title: 'Categoría no encontrada' }
   return {
-    title: category.name,
-    description: category.description,
-    alternates: { canonical: `/categoria/${category.slug}` },
+    title: resolved.name,
+    description: `Descubre los mejores productos de ${resolved.name.toLowerCase()} para tu huerto, jardín y finca.`,
+    alternates: { canonical: `/categoria/${path.join('/')}` },
   }
 }
 
 export default async function CategoryPage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ path: string[] }>
 }) {
-  const { slug } = await params
-  const category = getCategory(slug)
-  if (!category) notFound()
+  const { path } = await params
+  const resolved = resolvePath(path)
+  if (!resolved) notFound()
 
-  const categoryProducts = await getProductsByCategory(slug)
-  const relatedComparisons = getComparisonsByCategory(slug)
-  const relatedArticles = getArticlesByCategory(slug)
+  // Nivel 1 (categoría): reutiliza la ruta existente por categoría.
+  // Niveles 2 y 3 (grupo / subcategoría): usa la búsqueda por término, que
+  // internamente pasa por la misma capa de productos de Amazon (API → seed →
+  // demo). No se modifica la integración con Amazon.
+  const categoryProducts =
+    resolved.level === 1
+      ? await getProductsByCategory(resolved.categorySlug)
+      : await searchProducts(resolved.searchTerm)
 
-  // Productos populares: los mejor valorados como referencia rápida.
+  const relatedComparisons = getComparisonsByCategory(resolved.categorySlug)
+  const relatedArticles = getArticlesByCategory(resolved.categorySlug)
+
   const popular = [...categoryProducts]
     .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)
     .slice(0, 4)
 
+  const childrenHaveImages = resolved.children.some((c) => c.image)
+
   return (
     <>
       <PageHero
-        eyebrow={`${category.icon} Categoría`}
-        title={category.name}
-        description={category.description}
-        breadcrumbs={[{ label: 'Inicio', href: '/' }, { label: category.name }]}
+        eyebrow={`${resolved.category.icon} ${resolved.category.name}`}
+        title={resolved.name}
+        description={resolved.category.searchTerm}
+        breadcrumbs={resolved.breadcrumbs}
       />
 
-      {/* Subcategorías */}
-      {category.subcategories.length > 0 && (
+      {/* Navegación de subcategorías */}
+      {resolved.children.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:px-8">
           <h2 className="font-serif text-xl font-bold text-foreground">
-            Subcategorías
+            {resolved.level === 1 ? 'Explora por tipo' : 'Subcategorías'}
           </h2>
-          <ul className="mt-4 flex flex-wrap gap-2.5">
-            {category.subcategories.map((sub) => (
-              <li key={sub}>
-                <Link
-                  href={`/buscar?q=${encodeURIComponent(sub)}`}
-                  className="inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-primary"
-                >
-                  {sub}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {childrenHaveImages ? (
+            <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {resolved.children.map((child) => (
+                <li key={child.href}>
+                  <Link
+                    href={child.href}
+                    className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 text-center transition-shadow hover:shadow-md hover:shadow-primary/5"
+                  >
+                    <span className="relative size-16 overflow-hidden rounded-xl bg-secondary/40">
+                      <Image
+                        src={child.image || '/placeholder.svg'}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </span>
+                    <span className="text-sm font-medium text-foreground group-hover:text-primary">
+                      {child.name}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="mt-4 flex flex-wrap gap-2.5">
+              {resolved.children.map((child) => (
+                <li key={child.href}>
+                  <Link
+                    href={child.href}
+                    className="inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-primary"
+                  >
+                    {child.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
