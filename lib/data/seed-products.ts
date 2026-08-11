@@ -49,11 +49,11 @@ asin?: string
 /*  Formato: [nombre del tipo de producto, subcategoría]                        */
 /* -------------------------------------------------------------------------- */
 
-cconst CATALOG: Record<
+const CATALOG: Record<
   SeedCategory,
   Array<[title: string, subcategory: string, asin?: string]>
-> =
-  {
+> = 
+{
     huerto: [
       ['Semillas de tomate', 'Semillas'],
       ['Semillas de pimiento', 'Semillas'],
