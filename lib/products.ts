@@ -16,6 +16,7 @@ import {
   isAmazonConfigured,
 } from '@/lib/amazon/config'
 import {
+  getFeaturedSeedProducts,
   getSeedProductsByCategory,
   hasSeedProducts,
   searchSeedProducts,
@@ -100,6 +101,69 @@ export const searchProducts = unstable_cache(
   ['search-products'],
   { revalidate: PRODUCTS_REVALIDATE_SECONDS, tags: ['amazon-products'] },
 )
+
+/**
+ * Productos destacados para la portada. Fuente principal: Amazon Creators API
+ * (búsqueda genérica), con el catálogo provisional y el de demostración como
+ * fallback. Cacheado con revalidación temporal.
+ */
+export const getFeaturedProducts = unstable_cache(
+  async (limit = 8): Promise<Product[]> => {
+    if (isAmazonConfigured()) {
+      const items = await searchItems('huerto jardín herramientas', {
+        itemCount: limit,
+      })
+      if (items && items.length > 0) {
+        const mapped = mapItemsToProducts(items, 'destacados')
+        if (mapped.length > 0) return mapped.slice(0, limit)
+      }
+    }
+
+    if (hasSeedProducts()) {
+      const seeded = getFeaturedSeedProducts(limit)
+      if (seeded.length > 0) return seeded
+    }
+
+    return localProducts.slice(0, limit)
+  },
+  ['featured-products'],
+  { revalidate: PRODUCTS_REVALIDATE_SECONDS, tags: ['amazon-products'] },
+)
+
+/**
+ * Ofertas reales. SOLO se muestran productos cuyos datos de descuento proceden
+ * de la Amazon Creators API (campo `discount` calculado desde `savingBasis`).
+ * No se inventan precios anteriores ni porcentajes: si la API no está
+ * disponible o no devuelve ofertas verificadas, se devuelve una lista vacía.
+ */
+export const getOffers = unstable_cache(
+  async (limit = 8): Promise<Product[]> => {
+    if (!isAmazonConfigured()) return []
+
+    const items = await searchItems('ofertas huerto jardín', { itemCount: 24 })
+    if (!items || items.length === 0) return []
+
+    const mapped = mapItemsToProducts(items, 'ofertas')
+    return mapped
+      .filter((p) => typeof p.discount === 'number' && (p.discount ?? 0) > 0)
+      .slice(0, limit)
+  },
+  ['offers'],
+  { revalidate: PRODUCTS_REVALIDATE_SECONDS, tags: ['amazon-products'] },
+)
+
+/**
+ * Productos para una comparativa, obtenidos con la misma capa de productos de
+ * Amazon a partir del término de búsqueda de la comparativa. Cacheado por
+ * término. Reutiliza `searchProducts` (API → seed → local).
+ */
+export async function getComparisonProducts(
+  searchTerm: string,
+  limit = 4,
+): Promise<Product[]> {
+  const results = await searchProducts(searchTerm)
+  return results.slice(0, limit)
+}
 
 /**
  * Búsqueda de categorías (siempre local: son fijas y forman la navegación).

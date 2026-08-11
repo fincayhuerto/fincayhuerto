@@ -14,6 +14,8 @@ export type Category = {
   icon: string
   description: string
   image?: string
+  /** Subcategorías temáticas de la categoría (para navegación y filtros). */
+  subcategories: string[]
 }
 
 export type Product = {
@@ -39,7 +41,12 @@ export type Comparison = {
   slug: string
   title: string
   excerpt: string
+  /** Etiqueta de categoría para mostrar. */
   category: string
+  /** Slug de la categoría del sitio con la que se relaciona. */
+  categorySlug: string
+  /** Término de búsqueda usado por la capa de productos de Amazon. */
+  searchTerm: string
 }
 
 export type Article = {
@@ -49,6 +56,8 @@ export type Article = {
   image: string
   date: string
   readingTime: string
+  /** Slugs de categorías con las que se relaciona el artículo. */
+  categories?: string[]
 }
 
 export const categories: Category[] = [
@@ -59,6 +68,18 @@ export const categories: Category[] = [
     description:
       'Todo lo que necesitas para cultivar tus propias hortalizas en casa.',
     image: '/images/cat-huerto.png',
+    subcategories: [
+      'Herramientas para huerto',
+      'Preparación de la tierra',
+      'Riego para huerto',
+      'Semillas y plantación',
+      'Abonos y fertilizantes',
+      'Control de plagas',
+      'Invernaderos',
+      'Tutores y soportes',
+      'Protección de cultivos',
+      'Cosecha',
+    ],
   },
   {
     slug: 'jardin',
@@ -66,6 +87,18 @@ export const categories: Category[] = [
     icon: '🌿',
     description: 'Cuida tus plantas, flores y césped con los mejores productos.',
     image: '/images/cat-jardin.png',
+    subcategories: [
+      'Herramientas de jardín',
+      'Césped',
+      'Plantas y flores',
+      'Poda',
+      'Riego',
+      'Macetas y jardineras',
+      'Sustratos',
+      'Abonos',
+      'Control de plagas',
+      'Mobiliario y accesorios',
+    ],
   },
   {
     slug: 'herramientas',
@@ -73,6 +106,20 @@ export const categories: Category[] = [
     icon: '🔧',
     description: 'Herramientas manuales y eléctricas para trabajar la tierra.',
     image: '/images/product-herramientas.png',
+    subcategories: [
+      'Tijeras de podar',
+      'Palas',
+      'Azadas',
+      'Rastrillos',
+      'Horcas',
+      'Serruchos',
+      'Kits de herramientas',
+      'Cortasetos',
+      'Motosierras',
+      'Desbrozadoras',
+      'Taladros',
+      'Hidrolimpiadoras',
+    ],
   },
   {
     slug: 'riego',
@@ -80,6 +127,16 @@ export const categories: Category[] = [
     icon: '💧',
     description: 'Sistemas de riego, mangueras y programadores para ahorrar agua.',
     image: '/images/product-riego.png',
+    subcategories: [
+      'Mangueras',
+      'Riego por goteo',
+      'Riego automático',
+      'Aspersores',
+      'Programadores',
+      'Bombas de agua',
+      'Conectores y accesorios',
+      'Depósitos de agua',
+    ],
   },
   {
     slug: 'semillas',
@@ -87,6 +144,17 @@ export const categories: Category[] = [
     icon: '🌾',
     description: 'Semillas de hortalizas, aromáticas y flores de temporada.',
     image: '/images/product-semillas.png',
+    subcategories: [
+      'Tomate',
+      'Pimiento',
+      'Lechuga',
+      'Cebolla',
+      'Zanahoria',
+      'Aromáticas',
+      'Flores',
+      'Semillas ecológicas',
+      'Kits de cultivo',
+    ],
   },
   {
     slug: 'maquinaria',
@@ -94,6 +162,17 @@ export const categories: Category[] = [
     icon: '🚜',
     description: 'Motocultores, desbrozadoras y maquinaria para tu finca.',
     image: '/images/cat-maquinaria.png',
+    subcategories: [
+      'Motoazadas',
+      'Motocultores',
+      'Desbrozadoras',
+      'Motosierras',
+      'Cortacéspedes',
+      'Cortasetos',
+      'Pulverizadores',
+      'Trituradoras',
+      'Hidrolimpiadoras',
+    ],
   },
 ]
 
@@ -220,24 +299,56 @@ export const comparisons: Comparison[] = [
     title: 'Las mejores tijeras de podar',
     excerpt: 'Comparamos corte, durabilidad y comodidad para elegir sin errores.',
     category: 'Herramientas',
+    categorySlug: 'herramientas',
+    searchTerm: 'tijeras de podar',
+  },
+  {
+    slug: 'mejores-mangueras',
+    title: 'Las mejores mangueras',
+    excerpt: 'Resistencia, longitud y flexibilidad de las mangueras más vendidas.',
+    category: 'Riego',
+    categorySlug: 'riego',
+    searchTerm: 'manguera de jardín',
   },
   {
     slug: 'mejores-sistemas-de-riego',
     title: 'Mejores sistemas de riego',
     excerpt: 'Goteo, aspersión o exudación: cuál se adapta mejor a tu huerto.',
     category: 'Riego',
+    categorySlug: 'riego',
+    searchTerm: 'sistema de riego por goteo',
   },
   {
-    slug: 'mejores-herramientas-para-huerto',
-    title: 'Mejores herramientas para huerto',
-    excerpt: 'El equipo esencial para empezar a cultivar con buen pie.',
-    category: 'Huerto',
+    slug: 'mejores-hidrolimpiadoras',
+    title: 'Mejores hidrolimpiadoras',
+    excerpt: 'Presión, caudal y accesorios para limpiar sin esfuerzo.',
+    category: 'Herramientas',
+    categorySlug: 'herramientas',
+    searchTerm: 'hidrolimpiadora alta presión',
   },
   {
-    slug: 'mejores-motocultores',
-    title: 'Mejores motocultores',
+    slug: 'mejores-motoazadas',
+    title: 'Mejores motoazadas',
     excerpt: 'Potencia, anchura de trabajo y precio de los modelos más vendidos.',
     category: 'Maquinaria',
+    categorySlug: 'maquinaria',
+    searchTerm: 'motoazada',
+  },
+  {
+    slug: 'mejores-desbrozadoras',
+    title: 'Mejores desbrozadoras',
+    excerpt: 'Gasolina o batería: qué desbrozadora rinde mejor en cada terreno.',
+    category: 'Maquinaria',
+    categorySlug: 'maquinaria',
+    searchTerm: 'desbrozadora',
+  },
+  {
+    slug: 'mejores-cortacespedes',
+    title: 'Mejores cortacéspedes',
+    excerpt: 'Eléctricos, de gasolina o robot: comparamos las opciones más populares.',
+    category: 'Maquinaria',
+    categorySlug: 'maquinaria',
+    searchTerm: 'cortacésped',
   },
 ]
 
@@ -250,6 +361,7 @@ export const articles: Article[] = [
     image: '/images/blog-empezar-huerto.png',
     date: '2026-03-12',
     readingTime: '8 min',
+    categories: ['huerto', 'semillas'],
   },
   {
     slug: 'que-herramientas-necesitas-para-un-huerto',
@@ -259,6 +371,7 @@ export const articles: Article[] = [
     image: '/images/blog-herramientas.png',
     date: '2026-02-28',
     readingTime: '6 min',
+    categories: ['huerto', 'herramientas'],
   },
   {
     slug: 'cuando-plantar-cada-hortaliza',
@@ -268,6 +381,7 @@ export const articles: Article[] = [
     image: '/images/blog-calendario.png',
     date: '2026-02-15',
     readingTime: '10 min',
+    categories: ['huerto', 'semillas'],
   },
   {
     slug: 'como-ahorrar-agua-en-el-huerto',
@@ -277,6 +391,7 @@ export const articles: Article[] = [
     image: '/images/blog-ahorrar-agua.png',
     date: '2026-01-30',
     readingTime: '7 min',
+    categories: ['riego', 'huerto', 'jardin'],
   },
 ]
 
@@ -286,4 +401,19 @@ export function getCategory(slug: string): Category | undefined {
 
 export function getProductsByCategory(slug: string): Product[] {
   return products.filter((p) => p.category === slug)
+}
+
+/** Comparativas relacionadas con una categoría del sitio. */
+export function getComparisonsByCategory(slug: string): Comparison[] {
+  return comparisons.filter((c) => c.categorySlug === slug)
+}
+
+/** Artículos del blog relacionados con una categoría del sitio. */
+export function getArticlesByCategory(slug: string): Article[] {
+  return articles.filter((a) => a.categories?.includes(slug))
+}
+
+/** Subcategorías de una categoría (vacío si no existe). */
+export function getSubcategories(slug: string): string[] {
+  return getCategory(slug)?.subcategories ?? []
 }

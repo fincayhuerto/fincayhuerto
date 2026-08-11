@@ -1,9 +1,9 @@
-import { products } from '@/lib/data'
+import { getFeaturedProducts } from '@/lib/products'
 import { ProductCard } from '@/components/product-card'
 import { SectionHeading } from '@/components/section-heading'
 
-export function FeaturedProducts() {
-  const featured = products.slice(0, 8)
+export async function FeaturedProducts() {
+  const featured = await getFeaturedProducts(8)
   return (
     <section className="bg-secondary/40 py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

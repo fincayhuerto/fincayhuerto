@@ -10,10 +10,17 @@ function categoryName(slug: string): string {
 export function ProductCard({ product }: { product: Product }) {
   const hasPrice = Boolean(product.price)
   const hasRating = product.rating > 0
+  const hasDiscount =
+    typeof product.discount === 'number' && product.discount > 0
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg hover:shadow-primary/5">
       <div className="relative aspect-square overflow-hidden bg-secondary/40">
+        {hasDiscount && (
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-foreground">
+            -{product.discount}%
+          </span>
+        )}
         <Image
           src={product.image || '/placeholder.svg'}
           alt={product.name}
@@ -42,8 +49,15 @@ export function ProductCard({ product }: { product: Product }) {
           }`}
         >
           {hasPrice && (
-            <span className="font-serif text-lg font-bold text-primary">
-              {product.price}
+            <span className="flex flex-col leading-tight">
+              <span className="font-serif text-lg font-bold text-primary">
+                {product.price}
+              </span>
+              {product.originalPrice && (
+                <span className="text-xs text-muted-foreground line-through">
+                  {product.originalPrice}
+                </span>
+              )}
             </span>
           )}
           <a
