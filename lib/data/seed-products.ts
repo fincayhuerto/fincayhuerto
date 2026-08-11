@@ -95,8 +95,8 @@ cconst CATALOG: Record<
       ['Jardinera', 'Macetas y jardineras'],
     ],
       jardin: [
-  ['Tijeras de podar Bellota 3628 INOX-CE MB', 'Poda', 'B00F2NHFDA'],
-],
+  ['Bellota 3628 INOX-CE MB - Tijera Recolectora', 'Poda'],
+      ],
     herramientas: [
       ['Azada', 'Herramientas de huerto'],
       ['Pala', 'Herramientas de huerto'],
